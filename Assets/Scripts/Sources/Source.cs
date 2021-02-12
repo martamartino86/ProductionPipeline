@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using UnityEngine;
 using DG.Tweening;
 
@@ -60,7 +59,6 @@ namespace ProductionPipeline
             }
         }
 
-        
     }
 
 }

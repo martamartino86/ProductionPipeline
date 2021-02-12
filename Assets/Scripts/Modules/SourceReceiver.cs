@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace ProductionPipeline
 {
@@ -9,46 +11,57 @@ namespace ProductionPipeline
             Storer,
             Destroyer
         }
-        public TypeOfReceiver ReceiverType { get; private set; }
-        private int _nSourceReceived;
+        [SerializeField]
+        public TypeOfReceiver ReceiverType;
+        private Queue<Source> _receivedSources;
+
+        [SerializeField]
+        [Range(0f, 5f)]
+        private float _destroyInterval;
+        private float _lastDestroyedTimer;
+        private WaitForEndOfFrame _wait;
+
+        public int AmountOfSourceReceived 
+        {
+            get { return _receivedSources.Count; } 
+        }
 
         private void Awake()
         {
             CheckInput();
-            _nSourceReceived = 0;
+            _lastDestroyedTimer = Time.time;
+            _receivedSources = new Queue<Source>();
+            _wait = new WaitForEndOfFrame();
+            StartCoroutine(DestroySource());
         }
 
 
-        /// <summary>
-        /// Behaves depending from the type.
-        /// </summary>
-        private void ReceiveSource(Source source)
+        IEnumerator DestroySource()
         {
-            switch (ReceiverType)
+            while (true)
             {
-                case TypeOfReceiver.Storer:
-
-                    break;
-                case TypeOfReceiver.Destroyer:
-                    
-                    break;
-                default:
-                    break;
+                if (Time.time - _lastDestroyedTimer >= _destroyInterval)
+                {
+                    if (_receivedSources.Count > 0)
+                    {
+                        Source toBeDestroyedSource = _receivedSources.Dequeue();
+                        Destroy(toBeDestroyedSource.gameObject);
+                    }
+                    _lastDestroyedTimer = Time.time;
+                }
+                yield return _wait;
             }
-            _nSourceReceived++;
         }
 
-        /// <summary>
-        /// Receiving an input source from an InputModule TODO
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
-            Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform);
-            inputSource.transform.localPosition = Vector3.zero;
-            ReceiveSource(inputSource);
+            if (e.ReceivingModule == this)
+            {
+                Source inputSource = e.IncomingSource;
+                inputSource.transform.SetParent(transform);
+                inputSource.transform.localPosition = Vector3.zero;
+                _receivedSources.Enqueue(inputSource);
+            }
         }
     }
 

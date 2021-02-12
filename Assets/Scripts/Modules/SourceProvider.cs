@@ -28,8 +28,11 @@ namespace ProductionPipeline
 
         private void Start()
         {
-            CreateSource(_sourceType);
-            _lastCreationTime = Time.time;
+            if (PRODUCE)
+            {
+                CreateSource(_sourceType);
+                _lastCreationTime = Time.time;
+            }
         }
 
         void Update()
@@ -71,9 +74,7 @@ namespace ProductionPipeline
             }
             catch (Exception e) { Debug.LogError(e); }
         }
-       
-        // SourceProvider non ha moduli in Input, per cui non riceverà mai niente.
-        // Implementa il metodo solo perché deve.
+
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             throw new NotImplementedException();
