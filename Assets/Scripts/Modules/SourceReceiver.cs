@@ -9,22 +9,33 @@ namespace ProductionPipeline
             Storer,
             Destroyer
         }
-        public TypeOfReceiver _type;
+        public TypeOfReceiver ReceiverType { get; private set; }
+        private int _nSourceReceived;
 
         private void Awake()
         {
             CheckInput();
-            switch (_type)
+            _nSourceReceived = 0;
+        }
+
+
+        /// <summary>
+        /// Behaves depending from the type.
+        /// </summary>
+        private void ReceiveSource(Source source)
+        {
+            switch (ReceiverType)
             {
                 case TypeOfReceiver.Storer:
-                    gameObject.AddComponent<SourceStorer>();
+
                     break;
                 case TypeOfReceiver.Destroyer:
-                    gameObject.AddComponent<SourceDestroyer>();
+                    
                     break;
                 default:
                     break;
             }
+            _nSourceReceived++;
         }
 
         /// <summary>
@@ -32,6 +43,14 @@ namespace ProductionPipeline
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected override void InputModule_NewSource(object sender, SourceEventArgs e) { }
+        protected override void InputModule_NewSource(object sender, SourceEventArgs e)
+        {
+            Source inputSource = e.IncomingSource;
+            inputSource.transform.SetParent(transform);
+            inputSource.transform.localPosition = Vector3.zero;
+            ReceiveSource(inputSource);
+        }
     }
+
 }
+

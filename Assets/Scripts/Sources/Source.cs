@@ -20,7 +20,14 @@ namespace ProductionPipeline
         [SerializeField]
         protected SourceType _sourceType;
 
-        protected float _width, _height, _depth;
+        // The dimensions are set differently for the type of sources:
+        // basic sources set their dimensions from the mesh;
+        // assembled sources set their dimensions from the basic sources they are composed of
+        public float Width { get; protected set; }
+        public float Height { get; protected set; }
+        public float Depth { get; protected set; }
+
+        private MeshRenderer[] _renderers;
 
         public event EventHandler EndOfConveyor;
         protected virtual void OnIsArrived()
@@ -31,44 +38,29 @@ namespace ProductionPipeline
 
         public abstract SourceType GetSourceType();
 
-        public float GetWidth()
+        private void Awake()
         {
-            return _width;
-        }
-        public float GetHeight()
-        {
-            return _height;
-        }
-        public float GetDepth()
-        {
-            return _depth;
+            _renderers = GetComponentsInChildren<MeshRenderer>();
         }
 
         public void Move(Vector3[] conveyorWaypoints, float duration)
         {
             transform.DOPath(conveyorWaypoints, duration)
+                .SetOptions(false, AxisConstraint.None, AxisConstraint.X | AxisConstraint.Z)
                 .SetEase(Ease.Linear)
                 .SetLookAt(0.05f)
                 .OnComplete(() => OnIsArrived());
         }
 
-        //public void Move(Vector3 fromPosition, Vector3 toPosition, float velocity)
-        //{
-        //    StartCoroutine(MoveCoroutine(fromPosition, toPosition, velocity));
-        //}
+        public void Show(bool v)
+        {
+            foreach (var r in _renderers)
+            {
+                r.enabled = v;
+            }
+        }
 
-        //// TODO: PER ADESSO IL PARAMETRO VELOCITY E' DEL TUTTO INUTILE.
-        //// LE SOURCES DOVRANNO MUOVERSI SU SPLINE... PER ORA FACCIAMO CHE ARRIVANO A DESTINAZIONE IN QUALCHE MODO.
-        //IEnumerator MoveCoroutine(Vector3 fromPosition, Vector3 toPosition, float velocity)
-        //{
-        //    while (transform.position != toPosition)
-        //    {
-        //        transform.position = Vector3.MoveTowards(transform.position, toPosition, velocity * Time.deltaTime);
-        //        yield return new WaitForEndOfFrame();
-        //    }
-        //    OnIsArrived();
-        //    yield return null;
-        //}
+        
     }
 
 }

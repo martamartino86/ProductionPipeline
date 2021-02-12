@@ -5,44 +5,44 @@ namespace ProductionPipeline
     public abstract class BasicSource : Source
     {
         [SerializeField]
-        protected string _id;
+        public string Id { get; private set; }
         [SerializeField]
-        protected Color _color;
-
-        // Set dimensions from Editor.
-        // The scale of the object will be set based on these values.
-        public float Width, Height, Depth;
+        protected Color Color { get; private set; }
 
         public virtual void Initialize()
         {
-            _id = generateId();
-            _color = Random.ColorHSV();
-            setProperties();
+            Id = GenerateId();
+            Color = Random.ColorHSV();
+            SetProperties();
+            AdjustMeshPosition();
         }
 
-
-        private void setProperties()
+        private void SetProperties()
         {
-            gameObject.name = _id;
-            _width = Width; _height = Height; _depth = Depth;
-            transform.localScale = new Vector3(Width, Height, Depth);
-            GetComponent<MeshRenderer>().material.color = _color;
+            gameObject.name = Id;
+            MeshRenderer mr = GetComponentInChildren<MeshRenderer>();
+            // Assuming that Width is the size on X axis, Height is the size on Y axis, Width is the size on Z axis
+            Vector3 meshBoundsSize = mr.bounds.size;
+            Width  = meshBoundsSize.x;
+            Height = meshBoundsSize.y;
+            Depth  = meshBoundsSize.z;
+            mr.material.color = Color;
         }
 
-        private string generateId()
+        private string GenerateId()
         {
             string s = ProductionUtilities.RandomId(6);
             return s;
         }
 
-        public string GetId()
+        /// <summary>
+        /// This method moves the child transform of this BasicSource, in such a way that 
+        /// the pivot point of the whole BasicSource looks on the bottom of the mesh.
+        /// (Based on the assumption that the BasicSource has a child with the pivot centered on it)
+        /// </summary>
+        private void AdjustMeshPosition()
         {
-            return _id;
-        }
-
-        public Color GetColor()
-        {
-            return _color;
+            transform.GetChild(0).localPosition = new Vector3(0, Height / 2f, 0);
         }
 
     }

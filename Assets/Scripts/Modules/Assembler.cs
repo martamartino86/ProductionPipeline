@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProductionPipeline
@@ -26,6 +25,7 @@ namespace ProductionPipeline
         /// and when the Assembler is ready.
         /// </summary>
         private Queue<Source> _firstInputSourcesQueue, _secondInputSourcesQueue;
+        private int queueSwitchCounter = 0;
 
         private void Awake()
         {
@@ -55,19 +55,18 @@ namespace ProductionPipeline
                     Source source1 = _firstInputSourcesQueue.Dequeue();
                     Source source2 = _secondInputSourcesQueue.Dequeue();
                     AssembledSource assembledSource = Instantiate(Resources.Load<AssembledSource>("Prefabs/AssembledSources"));
-                    assembledSource.Initialize(source1, source2, GetAssembledSourceType());
+                    assembledSource.Initialize(source1, source2, GetAssembledSourceType(), transform);
                     SendSourceOut(assembledSource, this, OutputModule[0]);
                 }
             }
         }
 
 
-        private int queueSwitchCounter = 0;
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform, true);
-            // THIS IS UGLY! Temporary implementation. TODO
+            inputSource.transform.SetParent(transform);
+            inputSource.transform.localPosition = Vector3.zero;
             // if the Assembler takes the same type of input, put the source alternatively
             if (_sourceType1 == _sourceType2)
             {
@@ -89,7 +88,9 @@ namespace ProductionPipeline
                 _secondInputSourcesQueue.Enqueue(inputSource);
             }
             else
-                Debug.LogError("C'è qualcosa che non va...");
+            {
+                Debug.LogError("["+name+"] not receiving the expected type of source: " + inputSource.name + " " + inputSource.GetSourceType());
+            }
         }
 
         /// <summary>

@@ -9,6 +9,7 @@ namespace ProductionPipeline
         /// <summary>
         /// Velocity of transport in m/s
         /// </summary>
+        [Range(0.1f, 10f)]
         public float VelocityOfTransport;
 
         /// <summary>
@@ -19,6 +20,7 @@ namespace ProductionPipeline
         /// <summary>
         /// Points of the path
         /// </summary>
+        [SerializeField]
         private Vector3[] _pathPositions;
         private float _pathLength;
 
@@ -55,10 +57,11 @@ namespace ProductionPipeline
                 return;
             }
 
-            Debug.Log("[" + name + "] received new source: " +
-                e.EmittingModule.name + " " + e.IncomingSource.name);
+            Debug.Log("[" + name + "] received new source from " +
+                e.EmittingModule.name + ": " + e.IncomingSource.name);
 
             Source inputSource = e.IncomingSource;
+            inputSource.transform.SetParent(transform, true);
             _sourcesOnConveyor.Enqueue(inputSource);
             _lastAddedSource = inputSource;
             _newSourceAdded = true;
@@ -69,10 +72,8 @@ namespace ProductionPipeline
             if (_newSourceAdded)
             {
                 _newSourceAdded = false;
-                // in realtà queste andranno poi movimentate sulla forma ...
                 _lastAddedSource.EndOfConveyor += Source_HasMovedOnTheConveyor;
                 float duration = _pathLength / VelocityOfTransport;
-                //_lastAddedSource.Move(_waypoints[0].position, _waypoints, VelocityOfTransport);
                 _lastAddedSource.Move(_pathPositions, duration);
             }
         }

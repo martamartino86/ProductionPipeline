@@ -5,6 +5,7 @@ namespace ProductionPipeline
 {
     public class Buffer : Module
     {
+        [Range(0.1f,100f)]
         public float _intervalInSeconds;
 
         private float _lastReleaseTime;
@@ -54,7 +55,8 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform, true);
+            inputSource.transform.SetParent(transform);
+            inputSource.transform.localPosition = Vector3.zero;
             TemporarilyStoreSource(inputSource);
         }
     }

@@ -1,28 +1,22 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProductionPipeline
 {
     public class QualityAssurance : Module
     {
-        private Module _outputForGoodQuality, _outputForBadQuality;
+        private SourceReceiver _outputForGoodQuality, _outputForBadQuality;
         private bool _receivedNewSource;
         private Source _newSource;
 
         private void Awake()
         {
-            if (OutputModule[0].GetComponent<SourceDestroyer>() != null)
-            {
-                _outputForBadQuality = OutputModule[0];
-                _outputForGoodQuality = OutputModule[1];
-            }
-            else
-            {
-                _outputForBadQuality = OutputModule[1];
-                _outputForGoodQuality = OutputModule[0];
-            }
+            CheckInput();
+            CheckOutput();
+            SourceReceiver outputModule1 = OutputModule[0].GetComponent<SourceReceiver>();
+            SourceReceiver outputModule2 = OutputModule[1].GetComponent<SourceReceiver>();
+            _outputForBadQuality = (outputModule1.ReceiverType == SourceReceiver.TypeOfReceiver.Destroyer) ? outputModule1 : outputModule2;
+            _outputForGoodQuality = (outputModule1.ReceiverType == SourceReceiver.TypeOfReceiver.Storer) ? outputModule1 : outputModule2;
             _receivedNewSource = false;
         }
 
@@ -45,6 +39,8 @@ namespace ProductionPipeline
                     Base b1 = (Base)outputSource.GetFirstSource();
                     Base b2 = (Base)outputSource.GetSecondSource();
                     bool qualityCondition = b1.GetX() + b2.GetX() <= 100;
+                    string s = !qualityCondition ? "NOT" : "";
+                    Debug.Log("[" + name + "] The source " + outputSource.name + " did " + s + " satisfy our quality standards.");
                     SendSourceOut(outputSource, this, qualityCondition ? _outputForGoodQuality : _outputForBadQuality);
                 }
                 catch (InvalidCastException exc)

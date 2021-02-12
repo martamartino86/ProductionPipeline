@@ -5,7 +5,7 @@ namespace ProductionPipeline
 {
     public class SourceProvider : Module
     {
-        bool PRODUCE = true;
+        public bool PRODUCE = true;
 
         public Source.SourceType _sourceType;
         public float _intervalInSeconds;
@@ -28,6 +28,7 @@ namespace ProductionPipeline
 
         private void Start()
         {
+            CreateSource(_sourceType);
             _lastCreationTime = Time.time;
         }
 
@@ -37,35 +38,38 @@ namespace ProductionPipeline
             if (PRODUCE && Time.time - _lastCreationTime >= _intervalInSeconds)
             {
                 CreateSource(_sourceType);
-                _nSources++;
                 _lastCreationTime = Time.time;
-                PRODUCE = false;
             }
         }
 
         private void CreateSource(Source.SourceType type)
         {
-            BasicSource newSource = null;
-            switch (type)
+            try
             {
-                case Source.SourceType.Base:
-                    newSource = Instantiate(_baseSourcePrefab, transform.position, Quaternion.identity);
-                    break;
-                case Source.SourceType.Body:
-                    newSource = Instantiate(_bodySourcePrefab, transform.position, Quaternion.identity);
-                    break;
-                case Source.SourceType.Detail:
-                    newSource = Instantiate(_detailSourcePrefab, transform.position, Quaternion.identity);
-                    break;
-                default:
-                    break;
+                BasicSource newSource = null;
+                switch (type)
+                {
+                    case Source.SourceType.Base:
+                        newSource = Instantiate(_baseSourcePrefab, transform.position, Quaternion.identity);
+                        break;
+                    case Source.SourceType.Body:
+                        newSource = Instantiate(_bodySourcePrefab, transform.position, Quaternion.identity);
+                        break;
+                    case Source.SourceType.Detail:
+                        newSource = Instantiate(_detailSourcePrefab, transform.position, Quaternion.identity);
+                        break;
+                    default:
+                        break;
+                }
+                newSource.Initialize();
+                _nSources++;
+                Debug.Log("[" + name + "] generated source " + newSource.name);
+                // notify the output that I'm passing a source
+                // ASSUMPTION: FOR NOW, SourceProvider HANDLES ONLY ONE OUTPUT MODULE.
+                // IF MORE THAN ONE MODULE IS SET VIA EDITOR, EVERY OUTPUT MODULE WILL BE IGNORED EXCEPT THE FIRST ONE.
+                SendSourceOut(newSource, this, OutputModule[0]);
             }
-            newSource.Initialize();
-            Debug.Log("[" + name + "] generated source " + newSource.name);
-            // notify the output that I'm passing a source
-            // ASSUMPTION: FOR NOW, SourceProvider HANDLES ONLY ONE OUTPUT MODULE.
-            // IF MORE THAN ONE MODULE IS SET VIA EDITOR, EVERY OUTPUT MODULE WILL BE IGNORED EXCEPT THE FIRST ONE.
-            SendSourceOut(newSource, this, OutputModule[0]);
+            catch (Exception e) { Debug.LogError(e); }
         }
        
         // SourceProvider non ha moduli in Input, per cui non riceverà mai niente.

@@ -35,6 +35,7 @@ namespace ProductionPipeline
                 _receivedSource = false;
                 Source inputSource = _receivedSources.Dequeue();
                 int moduleIndex = ChooseOutput();
+                Debug.Log("Going to " + OutputModule[moduleIndex].name);
                 SendSourceOut(inputSource, this, OutputModule[moduleIndex]);
             }
         }
@@ -75,7 +76,8 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform, true);
+            inputSource.transform.SetParent(transform);
+            inputSource.transform.localPosition = Vector3.zero;
             _receivedSources.Enqueue(inputSource);
             _receivedSource = true;
         }
