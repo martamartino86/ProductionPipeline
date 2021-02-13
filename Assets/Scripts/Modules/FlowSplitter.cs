@@ -13,20 +13,23 @@ namespace ProductionPipeline
 
         private Queue<Source> _receivedSources;
 
-        // Start is called before the first frame update
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             CheckInput();
             CheckOutput();
-            if (_outputWeights.Length != OutputModule.Length)
+            if (OutputModules[0] == null || OutputModules[1] == null)
             {
-                Debug.LogError("[FlowSplitter] Please assign a weight to each output of this splitter.");
+                Debug.LogError("[" + ModuleName + "] Please assign the Output modules.");
+            }
+            if (_outputWeights.Length != OutputModules.Length)
+            {
+                Debug.LogError("[" + ModuleName + "] Please assign a weight to each output of this splitter.");
                 return;
             }
             _receivedSources = new Queue<Source>();
             _receivedSource = false;
         }
-
 
         private void Update()
         {
@@ -35,15 +38,16 @@ namespace ProductionPipeline
                 _receivedSource = false;
                 Source inputSource = _receivedSources.Dequeue();
                 int moduleIndex = ChooseOutput();
+#if DEBUG_PRINT
                 Debug.Log("Going to " + OutputModule[moduleIndex].name);
-                SendSourceOut(inputSource, this, OutputModule[moduleIndex]);
+#endif
+                SendSourceOut(inputSource, this, OutputModules[moduleIndex]);
+                DataChanged(GetStats());
             }
         }
 
         private int ChooseOutput()
         {
-            // potrei lasciare questa parte qui, in questo modo
-            // se i pesi cambiano a runtime (da editor) viene comunque aggiornato
             int[] moduleIndexes = new int[_outputWeights.Length];
             for (int i = 0; i < _outputWeights.Length; i++)
             {
@@ -52,8 +56,7 @@ namespace ProductionPipeline
             float weightsSum = 0;
             foreach (var weight in _outputWeights)
                 weightsSum += weight;
-            // (...fino a qui)
-
+            
             float x = Random.Range(0, weightsSum);
 
             float cumulativeWeight = 0;
@@ -80,6 +83,25 @@ namespace ProductionPipeline
             inputSource.transform.localPosition = Vector3.zero;
             _receivedSources.Enqueue(inputSource);
             _receivedSource = true;
+            DataChanged(GetStats());
+        }
+
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            for (int i = 0; i < _outputWeights.Length; i++)
+            {
+                stats += "\nOutput " + i + " weight: " + _outputWeights[i].ToString() + " ";
+            }
+            if (_receivedSources.Count > 0)
+            {
+                stats += "\nReceived sources: ";
+                foreach (Source s in _receivedSources)
+                {
+                    stats += s.name + " ";
+                }
+            }
+            return stats;
         }
     }
 

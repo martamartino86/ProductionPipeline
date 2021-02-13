@@ -5,17 +5,16 @@ namespace ProductionPipeline
 {
     public class QualityAssurance : Module
     {
-        // ASSUMPTION: since the output of the quality assurance could be two Conveyor (and we would not know where to send the source)
-        // let's make the assumption that AT LEAST one of the two is a SourceReceiver (either good or bad).
         private Module _outputForGoodQuality, _outputForBadQuality;
         private bool _receivedNewSource;
         private Source _newSource;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             CheckInput();
             CheckOutput();
-            CheckOutputType(OutputModule[0].GetComponent<SourceReceiver>(), OutputModule[1].GetComponent<SourceReceiver>());
+            CheckOutputType(OutputModules[0].GetComponent<SourceReceiver>(), OutputModules[1].GetComponent<SourceReceiver>());
             _receivedNewSource = false;
         }
 
@@ -26,11 +25,11 @@ namespace ProductionPipeline
                 if (outputModule0.ReceiverType == SourceReceiver.TypeOfReceiver.Destroyer)
                 {
                     _outputForBadQuality = outputModule0;
-                    _outputForGoodQuality = OutputModule[1].GetComponent<Module>();
+                    _outputForGoodQuality = OutputModules[1].GetComponent<Module>();
                 }
                 else
                 {
-                    _outputForBadQuality = OutputModule[1].GetComponent<Module>();
+                    _outputForBadQuality = OutputModules[1].GetComponent<Module>();
                     _outputForGoodQuality = outputModule0;
                 }
             }
@@ -39,11 +38,11 @@ namespace ProductionPipeline
                 if (outputModule1.ReceiverType == SourceReceiver.TypeOfReceiver.Destroyer)
                 {
                     _outputForBadQuality = outputModule1;
-                    _outputForGoodQuality = OutputModule[0].GetComponent<Module>();
+                    _outputForGoodQuality = OutputModules[0].GetComponent<Module>();
                 }
                 else
                 {
-                    _outputForBadQuality = OutputModule[0].GetComponent<Module>();
+                    _outputForBadQuality = OutputModules[0].GetComponent<Module>();
                     _outputForGoodQuality = outputModule1;
                 }
             }
@@ -56,6 +55,7 @@ namespace ProductionPipeline
             inputSource.transform.localPosition = Vector3.zero;
             _newSource = inputSource;
             _receivedNewSource = true;
+            DataChanged(GetStats());
         }
 
         private void Update()
@@ -69,16 +69,28 @@ namespace ProductionPipeline
                     Base b1 = (Base)outputSource.GetFirstSource();
                     Base b2 = (Base)outputSource.GetSecondSource();
                     bool qualityCondition = b1.GetX() + b2.GetX() <= 100;
-                    string s = !qualityCondition ? " NOT" : "";
                     Module destinationModule = qualityCondition ? _outputForGoodQuality : _outputForBadQuality;
+#if DEBUG_PRINT
+                    string s = !qualityCondition ? " NOT" : "";
                     Debug.Log("[" + name + "] The source " + outputSource.name + " did" + s + " satisfy our quality standards. Sending it to " + destinationModule.name);
+#endif
                     SendSourceOut(outputSource, this, destinationModule);
+                    DataChanged(GetStats());
+                    _newSource = null;
                 }
                 catch (InvalidCastException exc)
                 {
                     Debug.LogError("[" + name + "] " + exc + " // Cannot check quality of this Source.");
                 }
             }
+        }
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "Good quality output: " + _outputForGoodQuality.ModuleName +
+                "\nBad quality output: " + _outputForBadQuality.ModuleName +
+                "\nSource: " + _newSource;
+            return stats;
         }
     }
 

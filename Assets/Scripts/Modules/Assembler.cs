@@ -15,6 +15,7 @@ namespace ProductionPipeline
         /// </summary>
         [SerializeField]
         private float _productionTime;
+
         private float _lastProductionStartedTime;
         [SerializeField]
         private bool _isAssembling = false;
@@ -27,8 +28,9 @@ namespace ProductionPipeline
         private Queue<Source> _firstInputSourcesQueue, _secondInputSourcesQueue;
         private int queueSwitchCounter = 0;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             _firstInputSourcesQueue = new Queue<Source>();
             _secondInputSourcesQueue = new Queue<Source>();
         }
@@ -56,11 +58,11 @@ namespace ProductionPipeline
                     Source source2 = _secondInputSourcesQueue.Dequeue();
                     AssembledSource assembledSource = Instantiate(Resources.Load<AssembledSource>("Prefabs/AssembledSources"));
                     assembledSource.Initialize(source1, source2, GetAssembledSourceType(), transform);
-                    SendSourceOut(assembledSource, this, OutputModule[0]);
+                    SendSourceOut(assembledSource, this, OutputModules[0]);
+                    DataChanged(GetStats());
                 }
             }
         }
-
 
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
@@ -76,21 +78,23 @@ namespace ProductionPipeline
                 else
                     _secondInputSourcesQueue.Enqueue(inputSource);
                 queueSwitchCounter++;
-                return;
-            }
-
-            if (inputSource.GetSourceType() == _sourceType1)
-            {
-                _firstInputSourcesQueue.Enqueue(inputSource);
-            }
-            else if (inputSource.GetSourceType() == _sourceType2)
-            {
-                _secondInputSourcesQueue.Enqueue(inputSource);
             }
             else
             {
-                Debug.LogError("["+name+"] not receiving the expected type of source: " + inputSource.name + " " + inputSource.GetSourceType());
+                if (inputSource.GetSourceType() == _sourceType1)
+                {
+                    _firstInputSourcesQueue.Enqueue(inputSource);
+                }
+                else if (inputSource.GetSourceType() == _sourceType2)
+                {
+                    _secondInputSourcesQueue.Enqueue(inputSource);
+                }
+                else
+                {
+                    Debug.LogError("["+name+"] not receiving the expected type of source: " + inputSource.name + " " + inputSource.GetSourceType());
+                }
             }
+            DataChanged(GetStats());
         }
 
         /// <summary>
@@ -117,7 +121,30 @@ namespace ProductionPipeline
                 return Source.SourceType.Base;
             }
         }
-
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "\nType of input source 1: " + _sourceType1.ToString() +
+                "\nType of input source 2: " + _sourceType2.ToString() +
+                "\nProduction time: " + _productionTime.ToString() +
+                "\nIs Assembling: " + _isAssembling;
+            if (_firstInputSourcesQueue.Count > 0)
+            {
+                stats += "\nSources in queue: ";
+                foreach (Source s in _firstInputSourcesQueue)
+                {
+                    stats += s.name + " ";
+                }
+            }
+            if (_secondInputSourcesQueue.Count > 0)
+            {
+                foreach (Source s in _secondInputSourcesQueue)
+                {
+                    stats += s.name + " ";
+                }
+            }
+            return stats;
+        }
     }
 
 }

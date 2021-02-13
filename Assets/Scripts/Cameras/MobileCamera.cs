@@ -3,42 +3,48 @@
 public class MobileCamera : MonoBehaviour
 {
     [SerializeField]
-    private float _mainSpeed = 10.0f; //regular speed
-    [SerializeField]
-    private float _shiftAdd = 25.0f; //multiplied by how long shift is held.  Basically running
-    [SerializeField]
-    private float _maxShift = 100.0f; //Maximum speed when holdin gshift
-    [SerializeField]
-    private float _camSens = 0.1f; //How sensitive it with mouse
+    private float _mainSpeed = 10.0f;
+    private float _camSensitiveness = 0.1f;
+    private bool _mousePressed = false;
+    private Vector3 _lastMousePosition;
     
-    private Vector3 lastMouse = new Vector3(255, 255, 255); //kind of in the middle of the screen, rather than at the top (play)
-    private float totalRun = 1.0f;
-
     void Update()
     {
-        // mouse angle camera
-        lastMouse = Input.mousePosition - lastMouse;
-        lastMouse = new Vector3(-lastMouse.y * _camSens, lastMouse.x * _camSens, 0);
-        lastMouse = new Vector3(transform.eulerAngles.x + lastMouse.x, transform.eulerAngles.y + lastMouse.y, 0);
-        transform.eulerAngles = lastMouse;
-        lastMouse = Input.mousePosition;
+        if (Input.GetMouseButtonDown(0))
+        {
+            _mousePressed = true;
+            _lastMousePosition = Input.mousePosition;
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            _mousePressed = false;
+        }
+        if (_mousePressed)
+        {
+            // mouse angle camera
+            _lastMousePosition = Input.mousePosition - _lastMousePosition;
+            _lastMousePosition = new Vector3(-_lastMousePosition.y * _camSensitiveness, _lastMousePosition.x * _camSensitiveness, 0);
+            _lastMousePosition = new Vector3(transform.eulerAngles.x + _lastMousePosition.x, transform.eulerAngles.y + _lastMousePosition.y, 0);
+            transform.eulerAngles = _lastMousePosition;
+            _lastMousePosition = Input.mousePosition;
+        }
 
         // keyboard
         Vector3 p = GetBaseInput();
         p = p * _mainSpeed * Time.deltaTime;
         Vector3 newPosition = transform.position;
-        //if (Input.GetKey(KeyCode.Space))
-        //{ //If player wants to move on X and Z axis only
-        //    transform.Translate(p);
-        //    newPosition.x = transform.position.x;
-        //    newPosition.z = transform.position.z;
-        //    transform.position = newPosition;
-        //}
-        //else
+        // If player wants to move on X and Z axis only
+        if (Input.GetKey(KeyCode.Space))
+        {
+            transform.Translate(p);
+            newPosition.x = transform.position.x;
+            newPosition.z = transform.position.z;
+            transform.position = newPosition;
+        }
+        else
         {
             transform.Translate(p);
         }
-
     }
 
     private Vector3 GetBaseInput()

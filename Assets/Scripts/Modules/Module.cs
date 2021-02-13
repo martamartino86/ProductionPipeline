@@ -3,16 +3,35 @@ using UnityEngine;
 
 namespace ProductionPipeline
 {
+    public enum ModuleType
+    {
+        Assembler,
+        Buffer,
+        Conveyor,
+        FlowSplitter,
+        SourceProvider,
+        QualityAssurance,
+        SourceReceiver
+    }
+
     public abstract class Module : MonoBehaviour
     {
         /// <summary>
         /// Each module is connected to one or more input modules.
         /// </summary>
-        public Module[] InputModule;
+        public Module[] InputModules;
         /// <summary>
         /// Each module is connected to one or more output modules.
         /// </summary>
-        public Module[] OutputModule;
+        public Module[] OutputModules;
+
+        [SerializeField]
+        private string _moduleName;
+        [SerializeField]
+        private ModuleType _moduleType;
+
+        public string ModuleName { get { return _moduleName; } }
+        public ModuleType ModuleType { get { return _moduleType; } }
 
         /// <summary>
         /// Every module emits this event when the source is ready to be passed to the Output module(s).
@@ -23,7 +42,6 @@ namespace ProductionPipeline
             EventHandler<SourceEventArgs> handler = NewSource;
             handler?.Invoke(this, e);
         }
-
         public class SourceEventArgs : EventArgs
         {
             public Module EmittingModule; // who is sending the source
@@ -33,9 +51,9 @@ namespace ProductionPipeline
 
         protected void OnEnable()
         {
-            if (InputModule.Length > 0)
+            if (InputModules.Length > 0)
             {
-                foreach (var inputModule in InputModule)
+                foreach (var inputModule in InputModules)
                 {
                     if (inputModule == null)
                     {
@@ -48,9 +66,9 @@ namespace ProductionPipeline
         }
         protected void OnDisable()
         {
-            if (InputModule.Length > 0)
+            if (InputModules.Length > 0)
             {
-                foreach (var inputModule in InputModule)
+                foreach (var inputModule in InputModules)
                 {
                     if (inputModule != null)
                     {
@@ -58,6 +76,13 @@ namespace ProductionPipeline
                     }
                 }
             }
+        }
+
+        protected virtual void Awake()
+        {
+            TextMesh t = GetComponentInChildren<TextMesh>();
+            if (t != null)
+                t.text = _moduleName;
         }
 
         /// <summary>
@@ -82,9 +107,37 @@ namespace ProductionPipeline
             OnNewSource(args);
         }
 
+        protected void DataChanged(string newStats)
+        {
+            PipelineManager.Instance.DataUpdated(_moduleType, _moduleName, newStats);
+        }
+
+        public virtual string GetStats()
+        {
+            string stats = "<b>" + _moduleName + "</b>";
+            if (InputModules.Length > 0)
+            {
+                stats += "\nInput module(s): ";
+                for (int i = 0; i < InputModules.Length; i++)
+                {
+                    stats += InputModules[i]._moduleName + " ";
+                }
+            }
+            if (OutputModules.Length > 0)
+            {
+                stats += "\nOutput module(s): ";
+                for (int i = 0; i < OutputModules.Length; i++)
+                {
+                    stats += OutputModules[i]._moduleName + " ";
+                }
+            }
+            stats += "\n";
+            return stats;
+        }
+
         public void CheckInput()
         {
-            if (InputModule == null || InputModule.Length == 0)
+            if (InputModules == null || InputModules.Length == 0)
             {
                 Debug.LogError("[" + gameObject.name + "]: Please assign a valid input module");
             }
@@ -92,7 +145,7 @@ namespace ProductionPipeline
 
         public void CheckOutput()
         {
-            if (OutputModule == null || OutputModule.Length == 0)
+            if (OutputModules == null || OutputModules.Length == 0)
             {
                 Debug.LogError("[" + gameObject.name + "]: Please assign a valid output module");
             }

@@ -5,7 +5,7 @@ namespace ProductionPipeline
 {
     public class SourceProvider : Module
     {
-        public bool PRODUCE = true;
+        public bool BeginProductionAtStart = true;
 
         public Source.SourceType _sourceType;
         public float _intervalInSeconds;
@@ -14,21 +14,22 @@ namespace ProductionPipeline
         private Body _bodySourcePrefab;
         private Detail _detailSourcePrefab;
 
+        private int _nSourcesCreated;
         private float _lastCreationTime;
-        private int _nSources;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             CheckOutput();
             _baseSourcePrefab = Resources.Load<Base>("Prefabs/BaseSource");
             _bodySourcePrefab = Resources.Load<Body>("Prefabs/BodySource");
             _detailSourcePrefab = Resources.Load<Detail>("Prefabs/DetailSource");
-            _nSources = 0;
+            _nSourcesCreated = 0;
         }
 
         private void Start()
         {
-            if (PRODUCE)
+            if (BeginProductionAtStart)
             {
                 CreateSource(_sourceType);
                 _lastCreationTime = Time.time;
@@ -37,8 +38,7 @@ namespace ProductionPipeline
 
         void Update()
         {
-            // every deltaCreationSeconds, it generates a new source // DEBUG
-            if (PRODUCE && Time.time - _lastCreationTime >= _intervalInSeconds)
+            if (Time.time - _lastCreationTime >= _intervalInSeconds)
             {
                 CreateSource(_sourceType);
                 _lastCreationTime = Time.time;
@@ -65,19 +65,30 @@ namespace ProductionPipeline
                         break;
                 }
                 newSource.Initialize();
-                _nSources++;
+                _nSourcesCreated++;
+#if DEBUG_PRINT
                 Debug.Log("[" + name + "] generated source " + newSource.name);
-                // notify the output that I'm passing a source
-                // ASSUMPTION: FOR NOW, SourceProvider HANDLES ONLY ONE OUTPUT MODULE.
-                // IF MORE THAN ONE MODULE IS SET VIA EDITOR, EVERY OUTPUT MODULE WILL BE IGNORED EXCEPT THE FIRST ONE.
-                SendSourceOut(newSource, this, OutputModule[0]);
+#endif
+                SendSourceOut(newSource, this, OutputModules[0]);
+                DataChanged(GetStats());
             }
             catch (Exception e) { Debug.LogError(e); }
         }
 
-        protected override void InputModule_NewSource(object sender, SourceEventArgs e)
+        public override string GetStats()
         {
-            throw new NotImplementedException();
+            string stats = base.GetStats();
+            stats += "\nType of source produced: " + _sourceType.ToString() +
+                "\nCreate a new source each " + _intervalInSeconds.ToString() + " seconds" +
+                "\nTotal amount of sources created: " + _nSourcesCreated;
+            if (BeginProductionAtStart)
+            {
+                stats += "This provider begins the production when the simulation starts.";
+            }
+            return stats;
         }
+
+        protected override void InputModule_NewSource(object sender, SourceEventArgs e)
+        {}
     }
 }

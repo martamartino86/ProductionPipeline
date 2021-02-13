@@ -11,8 +11,9 @@ namespace ProductionPipeline
         private float _lastReleaseTime;
         private Queue<Source> _currentlyStoredSources;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             CheckInput();
             CheckOutput();
             _currentlyStoredSources = new Queue<Source>();
@@ -22,7 +23,7 @@ namespace ProductionPipeline
         {
             _lastReleaseTime = Time.time;
         }
-
+        
         /// <summary>
         /// Temporarily stores a new source.
         /// </summary>
@@ -40,15 +41,15 @@ namespace ProductionPipeline
                 if (_currentlyStoredSources.Count > 0)
                 {
                     Source outputSource = _currentlyStoredSources.Dequeue();
-                    SendSourceOut(outputSource, this, OutputModule[0]);
+                    SendSourceOut(outputSource, this, OutputModules[0]);
+                    DataChanged(GetStats());
                 }
                 _lastReleaseTime = Time.time;
             }
         }
 
-
         /// <summary>
-        /// Receiving an input source from an InputModule TODO
+        /// Receiving an input source from an InputModule
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -58,7 +59,24 @@ namespace ProductionPipeline
             inputSource.transform.SetParent(transform);
             inputSource.transform.localPosition = Vector3.zero;
             TemporarilyStoreSource(inputSource);
+            DataChanged(GetStats());
         }
+
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "\nBuffering time: " + _intervalInSeconds.ToString() + " sec.";
+            if (_currentlyStoredSources.Count > 0)
+            {
+                stats += "\nCurrently stored sources: ";
+                foreach (Source s in _currentlyStoredSources)
+                {
+                    stats += s.name + " ";
+                }
+            }
+            return stats;
+        }
+
     }
 
 }

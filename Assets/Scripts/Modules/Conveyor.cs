@@ -27,8 +27,9 @@ namespace ProductionPipeline
         private Source _lastAddedSource;
         private bool _newSourceAdded;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             CheckInput();
             CheckOutput();
             _sourcesOnConveyor = new Queue<Source>();
@@ -53,18 +54,21 @@ namespace ProductionPipeline
             // I could be receiving a notification for a Source that is not for me. I need to check.
             if (e.ReceivingModule != this)
             {
+#if DEBUG_PRINT
                 Debug.Log("[" + name + "] This Source is not for me.");
+#endif
                 return;
             }
-
+#if DEBUG_PRINT
             Debug.Log("[" + name + "] received new source from " +
                 e.EmittingModule.name + ": " + e.IncomingSource.name);
-
+#endif
             Source inputSource = e.IncomingSource;
             inputSource.transform.SetParent(transform, true);
             _sourcesOnConveyor.Enqueue(inputSource);
             _lastAddedSource = inputSource;
             _newSourceAdded = true;
+            DataChanged(GetStats());
         }
 
         void Update()
@@ -83,10 +87,24 @@ namespace ProductionPipeline
             ((Source)sender).EndOfConveyor -= Source_HasMovedOnTheConveyor;
             Source outputSource = _sourcesOnConveyor.Dequeue();
             // when source is arrived at destination, invoke
-            SendSourceOut(outputSource, this, OutputModule[0]);
+            SendSourceOut(outputSource, this, OutputModules[0]);
+            DataChanged(GetStats());
         }
-
-
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "\nVelocity of transport: " + VelocityOfTransport.ToString() + " m/s";
+            stats += "\nLength of the conveyor: " + _pathLength.ToString() + " m";
+            if (_sourcesOnConveyor.Count > 0)
+            {
+                stats += "\nTransported sources: ";
+                foreach (Source s in _sourcesOnConveyor)
+                {
+                    stats += s.name + " ";
+                }
+            }
+            return stats;
+        }
     }
 
 }

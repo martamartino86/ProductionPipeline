@@ -31,7 +31,7 @@ namespace ProductionPipeline
 
         private string GenerateId()
         {
-            string s = ProductionUtilities.RandomId(6);
+            string s = Utilities.RandomId(6);
             return s;
         }
 
