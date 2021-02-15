@@ -14,12 +14,7 @@ namespace ProductionPipeline
         [SerializeField]
         public TypeOfReceiver ReceiverType;
         private Queue<Source> _receivedSources;
-
-        [SerializeField]
-        [Range(0f, 5f)]
-        private float _destroyInterval;
-        private WaitForEndOfFrame _wait;
-        private bool _coroutineRunning;
+        private bool _newSourceReceived;
         private int _nSourcesReceived;
 
         protected override void Awake()
@@ -27,37 +22,23 @@ namespace ProductionPipeline
             base.Awake();
             CheckInput();
             _receivedSources = new Queue<Source>();
-            _wait = new WaitForEndOfFrame();
-            _coroutineRunning = false;
             _nSourcesReceived = 0;
+            _newSourceReceived = false;
         }
 
         void Update()
         {
-            if (_receivedSources.Count > 0)
+            if (_paused) return;
+            if (_newSourceReceived)
             {
-                if (!_coroutineRunning)
-                    StartCoroutine(DestroySource());
-            }
-        }
-
-        IEnumerator DestroySource()
-        {
-            _coroutineRunning = true;
-            bool _destroyed = false;
-            float timer = Time.time;
-            while (!_destroyed)
-            {
-                if (Time.time - timer >= _destroyInterval)
+                if (_receivedSources.Count > 1)
                 {
-                    Source toBeDestroyedSource = _receivedSources.Dequeue();
-                    Destroy(toBeDestroyedSource.gameObject);
-                    _destroyed = true;
+                    Source toBeDeleted = _receivedSources.Dequeue();
+                    Destroy(toBeDeleted.gameObject);
+                    DataChanged(GetStats());
                 }
-                yield return _wait;
+                _newSourceReceived = false;
             }
-            DataChanged(GetStats());
-            _coroutineRunning = false;
         }
 
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
@@ -65,9 +46,9 @@ namespace ProductionPipeline
             if (e.ReceivingModule == this)
             {
                 Source inputSource = e.IncomingSource;
-                inputSource.transform.SetParent(transform);
-                inputSource.transform.localPosition = Vector3.zero;
+                inputSource.SetCurrentParent(this);
                 _receivedSources.Enqueue(inputSource);
+                _newSourceReceived = true;
                 _nSourcesReceived++;
                 DataChanged(GetStats());
             }
@@ -76,14 +57,13 @@ namespace ProductionPipeline
         {
             string stats = base.GetStats();
             stats += "\nType of receiver: " + ReceiverType.ToString() +
-                "\nDestroy GameObjects after " + _destroyInterval + " seconds" +
                 "\nTotal amount of sources received: " + _nSourcesReceived;
             if (_receivedSources.Count > 0)
             {
                 stats += "\nSources currently in the receiver: ";
                 foreach (var s in _receivedSources)
                 {
-                    stats += s.ToString() + " ";
+                    stats += s.Id.ToString() + " ";
                 }
             }
             return stats;

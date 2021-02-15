@@ -4,35 +4,46 @@ namespace ProductionPipeline
 {
     public abstract class BasicSource : Source
     {
+        public Color Color { get { return _color; } private set { _color = value; } }
+        /// <summary>
+        /// Random generated color (at creation). Color assigned via inspector will be ignored.
+        /// </summary>
         [SerializeField]
-        public string Id { get; private set; }
-        [SerializeField]
-        protected Color Color { get; private set; }
+        private Color _color;
+        private TextMesh _3dName;
 
-        public virtual void Initialize()
+        public virtual void Initialize(Module creationModule)
         {
-            Id = GenerateId();
-            Color = Random.ColorHSV();
+            CreationModule = creationModule;
             SetProperties();
             AdjustMeshPosition();
+            SourceCreated();
         }
 
         private void SetProperties()
         {
-            gameObject.name = Id;
+            Id = GenerateId();
+            Color = Random.ColorHSV();
+            name = Id;
             MeshRenderer mr = GetComponentInChildren<MeshRenderer>();
-            // Assuming that Width is the size on X axis, Height is the size on Y axis, Width is the size on Z axis
-            Vector3 meshBoundsSize = mr.bounds.size;
-            Width  = meshBoundsSize.x;
-            Height = meshBoundsSize.y;
-            Depth  = meshBoundsSize.z;
             mr.material.color = Color;
+            if (Width == 0 && Height == 0 && Depth == 0)
+            {
+                // Assuming that Width is the size on X axis, Height is the size on Y axis, Width is the size on Z axis
+                Vector3 meshBoundsSize = mr.bounds.size;
+                Width  = meshBoundsSize.x;
+                Height = meshBoundsSize.y;
+                Depth  = meshBoundsSize.z;
+            }
+            _3dName = Instantiate(Resources.Load<TextMesh>("Prefabs/Source3dName"));
+            _3dName.transform.SetParent(transform);
+            _3dName.transform.localPosition = new Vector3(0, Height + .1f, 0);
+            _3dName.text = Id;
         }
 
         private string GenerateId()
         {
-            string s = Utilities.RandomId(6);
-            return s;
+            return Utilities.RandomId(6);
         }
 
         /// <summary>

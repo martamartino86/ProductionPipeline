@@ -38,6 +38,7 @@ namespace ProductionPipeline
 
         void Update()
         {
+            if (_paused) return;
             if (Time.time - _lastCreationTime >= _intervalInSeconds)
             {
                 CreateSource(_sourceType);
@@ -64,7 +65,8 @@ namespace ProductionPipeline
                     default:
                         break;
                 }
-                newSource.Initialize();
+                newSource.SetCurrentParent(this, true, false);
+                newSource.Initialize(this);
                 _nSourcesCreated++;
 #if DEBUG_PRINT
                 Debug.Log("[" + name + "] generated source " + newSource.name);
@@ -83,7 +85,7 @@ namespace ProductionPipeline
                 "\nTotal amount of sources created: " + _nSourcesCreated;
             if (BeginProductionAtStart)
             {
-                stats += "This provider begins the production when the simulation starts.";
+                stats += "\nThis provider begins the production when the simulation starts.";
             }
             return stats;
         }

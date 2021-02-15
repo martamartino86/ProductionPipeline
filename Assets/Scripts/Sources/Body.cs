@@ -4,23 +4,38 @@ namespace ProductionPipeline
 {
     public class Body : BasicSource
     {
-        private enum y_Type
+        public enum y_Type
         {
             A, B, C
         }
+        public y_Type Y { get { return _y; } private set { _y = value; } }
         [SerializeField]
         private y_Type _y;
 
-        public override void Initialize()
+        public override SourceType Type
         {
-            base.Initialize();
-            _y = (y_Type)Random.Range(1, 4);
+            get
+            {
+                return SourceType.Body;
+            }
+            protected set { }
         }
 
-        public override SourceType GetSourceType()
+        public override void Initialize(Module creationModule)
         {
-            return SourceType.Body;
+            base.Initialize(creationModule);
+            Y = (y_Type)Random.Range(1, 4);
         }
+
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "\nY = " + Y +
+                "\nColor: " + Color +
+                "\nType: " + Type;
+            return stats;
+        }
+
     }
 
 }

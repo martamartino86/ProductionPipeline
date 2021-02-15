@@ -33,6 +33,7 @@ namespace ProductionPipeline
 
         private void Update()
         {
+            if (_paused) return;
             if (_receivedSource)
             {
                 _receivedSource = false;
@@ -79,8 +80,7 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform);
-            inputSource.transform.localPosition = Vector3.zero;
+            inputSource.SetCurrentParent(this);
             _receivedSources.Enqueue(inputSource);
             _receivedSource = true;
             DataChanged(GetStats());

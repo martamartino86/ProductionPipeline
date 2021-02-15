@@ -20,11 +20,21 @@ namespace ProductionPipeline
         /// <summary>
         /// Points of the path
         /// </summary>
-        [SerializeField]
         private Vector3[] _pathPositions;
+
+        /// <summary>
+        /// Total length of the path
+        /// </summary>
         private float _pathLength;
 
+        /// <summary>
+        /// Last added sources 
+        /// </summary>
         private Source _lastAddedSource;
+
+        /// <summary>
+        /// True when a new source has been added and must be moved, false otherwise
+        /// </summary>
         private bool _newSourceAdded;
 
         protected override void Awake()
@@ -64,7 +74,7 @@ namespace ProductionPipeline
                 e.EmittingModule.name + ": " + e.IncomingSource.name);
 #endif
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform, true);
+            inputSource.SetCurrentParent(this, false, false);
             _sourcesOnConveyor.Enqueue(inputSource);
             _lastAddedSource = inputSource;
             _newSourceAdded = true;
@@ -73,6 +83,7 @@ namespace ProductionPipeline
 
         void Update()
         {
+            if (_paused) return;
             if (_newSourceAdded)
             {
                 _newSourceAdded = false;

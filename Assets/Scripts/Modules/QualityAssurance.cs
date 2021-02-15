@@ -51,8 +51,7 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform);
-            inputSource.transform.localPosition = Vector3.zero;
+            inputSource.SetCurrentParent(this);
             _newSource = inputSource;
             _receivedNewSource = true;
             DataChanged(GetStats());
@@ -60,15 +59,16 @@ namespace ProductionPipeline
 
         private void Update()
         {
+            if (_paused) return;
             if (_receivedNewSource)
             {
                 _receivedNewSource = false;
                 try
                 {
                     AssembledSource outputSource = (AssembledSource)_newSource;
-                    Base b1 = (Base)outputSource.GetFirstSource();
-                    Base b2 = (Base)outputSource.GetSecondSource();
-                    bool qualityCondition = b1.GetX() + b2.GetX() <= 100;
+                    Base b1 = (Base)outputSource.Source1;
+                    Base b2 = (Base)outputSource.Source2;
+                    bool qualityCondition = b1.X + b2.X <= 100;
                     Module destinationModule = qualityCondition ? _outputForGoodQuality : _outputForBadQuality;
 #if DEBUG_PRINT
                     string s = !qualityCondition ? " NOT" : "";

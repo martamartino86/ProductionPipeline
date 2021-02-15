@@ -20,19 +20,35 @@ namespace ProductionPipeline
         /// Each module is connected to one or more input modules.
         /// </summary>
         public Module[] InputModules;
+
         /// <summary>
         /// Each module is connected to one or more output modules.
         /// </summary>
         public Module[] OutputModules;
 
+        /// <summary>
+        /// Name of this module.
+        /// </summary>
         [SerializeField]
         private string _moduleName;
-        [SerializeField]
-        private ModuleType _moduleType;
+        public string ModuleName 
+        {
+            get
+            { 
+                return _moduleName; 
+            }
+        }
 
-        public string ModuleName { get { return _moduleName; } }
-        public ModuleType ModuleType { get { return _moduleType; } }
+        /// <summary>
+        /// Type of module.
+        /// </summary>
+        public ModuleType ModuleType { get; private set; }
 
+        /// <summary>
+        /// If true (user has paused the simulation), the module temporarily stops working
+        /// </summary>
+        protected bool _paused;
+        
         /// <summary>
         /// Every module emits this event when the source is ready to be passed to the Output module(s).
         /// </summary>
@@ -63,7 +79,9 @@ namespace ProductionPipeline
                     inputModule.NewSource += InputModule_NewSource;
                 }
             }
+            PipelineManager.Instance.SimulationPaused += Instance_SimulationPaused;
         }
+
         protected void OnDisable()
         {
             if (InputModules.Length > 0)
@@ -76,13 +94,55 @@ namespace ProductionPipeline
                     }
                 }
             }
+            if (PipelineManager.Instance != null)
+                PipelineManager.Instance.SimulationPaused -= Instance_SimulationPaused;
         }
 
         protected virtual void Awake()
         {
+            if (_moduleName == "")
+            {
+                Debug.LogError("[" + gameObject.name + " Please assign carefully all the properties in the inspector.");
+            }
+            SetModuleType();
             TextMesh t = GetComponentInChildren<TextMesh>();
             if (t != null)
                 t.text = _moduleName;
+        }
+
+        private void SetModuleType()
+        {
+            if (this is Assembler)
+            {
+                ModuleType = ModuleType.Assembler;
+            }
+            else if (this is Buffer)
+            {
+                ModuleType = ModuleType.Buffer;
+            }
+            else if (this is Conveyor)
+            {
+                ModuleType = ModuleType.Conveyor;
+            }
+            else if (this is FlowSplitter)
+            {
+                ModuleType = ModuleType.FlowSplitter;
+            }
+            else if (this is SourceProvider)
+            {
+                ModuleType = ModuleType.SourceProvider;
+            }
+            else if (this is SourceReceiver)
+            {
+                ModuleType = ModuleType.SourceReceiver;
+            }
+            else if (this is QualityAssurance)
+            {
+                ModuleType = ModuleType.QualityAssurance;
+            }
+#if DEBUG_PRINT
+            print(ModuleName + " " + ModuleType);
+#endif
         }
 
         /// <summary>
@@ -109,7 +169,7 @@ namespace ProductionPipeline
 
         protected void DataChanged(string newStats)
         {
-            PipelineManager.Instance.DataUpdated(_moduleType, _moduleName, newStats);
+            PipelineManager.Instance.ModuleDataUpdated(ModuleType, _moduleName, newStats);
         }
 
         public virtual string GetStats()
@@ -151,6 +211,10 @@ namespace ProductionPipeline
             }
         }
 
+        private void Instance_SimulationPaused(object sender, PipelineManager.SimulationEventArgs e)
+        {
+            _paused = e.IsPaused;
+        }
     }
 
 }

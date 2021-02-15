@@ -6,15 +6,30 @@ namespace ProductionPipeline
     {
         [SerializeField]
         private int _z;
+        public int Z { get { return _z; } private set { _z = value; } }
 
-        public override void Initialize()
+        public override SourceType Type
         {
-            base.Initialize();
-            _z = Random.Range(-30, 30);
+            get
+            {
+                return SourceType.Detail;
+            }
+            protected set { }
         }
-        public override SourceType GetSourceType()
+
+        public override void Initialize(Module creationModule)
         {
-            return SourceType.Detail;
+            base.Initialize(creationModule);
+            Z = Random.Range(-30, 30);
+        }
+
+        public override string GetStats()
+        {
+            string stats = base.GetStats();
+            stats += "\nZ = " + Z +
+                "\nColor: " + Color +
+                "\nType: " + Type;
+            return stats;
         }
     }
 

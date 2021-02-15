@@ -36,6 +36,7 @@ namespace ProductionPipeline
         
         void Update()
         {
+            if (_paused) return;
             if (Time.time - _lastReleaseTime >= _intervalInSeconds)
             {
                 if (_currentlyStoredSources.Count > 0)
@@ -56,8 +57,7 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform);
-            inputSource.transform.localPosition = Vector3.zero;
+            inputSource.SetCurrentParent(this);
             TemporarilyStoreSource(inputSource);
             DataChanged(GetStats());
         }

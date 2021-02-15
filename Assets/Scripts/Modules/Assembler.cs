@@ -17,7 +17,6 @@ namespace ProductionPipeline
         private float _productionTime;
 
         private float _lastProductionStartedTime;
-        [SerializeField]
         private bool _isAssembling = false;
 
         /// <summary>
@@ -40,8 +39,10 @@ namespace ProductionPipeline
             _lastProductionStartedTime = 0;
         }
 
-        private void Update()
+        void Update()
         {
+            if (_paused) return;
+
             // when there is at least 1 element for each queue, take some _productionTime
             // and then a new AssembledSource is released
             if (_firstInputSourcesQueue.Count > 0 && _secondInputSourcesQueue.Count > 0)
@@ -57,8 +58,10 @@ namespace ProductionPipeline
                     Source source1 = _firstInputSourcesQueue.Dequeue();
                     Source source2 = _secondInputSourcesQueue.Dequeue();
                     AssembledSource assembledSource = Instantiate(Resources.Load<AssembledSource>("Prefabs/AssembledSources"));
-                    assembledSource.Initialize(source1, source2, GetAssembledSourceType(), transform);
+                    assembledSource.Initialize(source1, source2, ComputeAssembledSourceType(), transform);
                     SendSourceOut(assembledSource, this, OutputModules[0]);
+                    source1.Assembled();
+                    source2.Assembled();
                     DataChanged(GetStats());
                 }
             }
@@ -67,8 +70,7 @@ namespace ProductionPipeline
         protected override void InputModule_NewSource(object sender, SourceEventArgs e)
         {
             Source inputSource = e.IncomingSource;
-            inputSource.transform.SetParent(transform);
-            inputSource.transform.localPosition = Vector3.zero;
+            inputSource.SetCurrentParent(this);
             // if the Assembler takes the same type of input, put the source alternatively
             if (_sourceType1 == _sourceType2)
             {
@@ -81,17 +83,17 @@ namespace ProductionPipeline
             }
             else
             {
-                if (inputSource.GetSourceType() == _sourceType1)
+                if (inputSource.Type == _sourceType1)
                 {
                     _firstInputSourcesQueue.Enqueue(inputSource);
                 }
-                else if (inputSource.GetSourceType() == _sourceType2)
+                else if (inputSource.Type == _sourceType2)
                 {
                     _secondInputSourcesQueue.Enqueue(inputSource);
                 }
                 else
                 {
-                    Debug.LogError("["+name+"] not receiving the expected type of source: " + inputSource.name + " " + inputSource.GetSourceType());
+                    Debug.LogError("["+name+"] not receiving the expected type of source: " + inputSource.name + " " + inputSource.Type);
                 }
             }
             DataChanged(GetStats());
@@ -102,7 +104,7 @@ namespace ProductionPipeline
         /// </summary>
         /// <returns>The source type of the assembled (please note: if "Base" is returned, 
         /// it means that the combination of these sources does not have a rule yet.</returns>
-        private Source.SourceType GetAssembledSourceType()
+        private Source.SourceType ComputeAssembledSourceType()
         {
             if (_sourceType1 == Source.SourceType.Base && _sourceType2 == Source.SourceType.Base)
             {

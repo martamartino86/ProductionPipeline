@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using ProductionPipeline;
 
 public class UIManager : MonoBehaviour
-{
-    [SerializeField]
-    private ProductionPipeline.PipelineManager _pipelineManager;
-    
+{    
     /// <summary>
     /// Dropdown for the selection of the Type of module (Assembler, Buffer, ecc).
     /// </summary>
@@ -32,24 +30,75 @@ public class UIManager : MonoBehaviour
     private Toggle _pauseToggle;
 
     /// <summary>
-    /// Text element for showing stats.
+    /// Sources panel.
     /// </summary>
     [SerializeField]
-    private Text _statsText;
+    private CanvasGroup _sourcesPanel;
+
+    /// <summary>
+    /// Dropdown for the selection of the Type of module (Assembler, Buffer, ecc).
+    /// </summary>
+    [SerializeField]
+    private Dropdown _sourcesInPipelineDropdown;
+
+    /// <summary>
+    /// Text element for showing module stats.
+    /// </summary>
+    [SerializeField]
+    private Text _moduleStatsText;
+
+    /// <summary>
+    /// Text element for showing module stats.
+    /// </summary>
+    [SerializeField]
+    private Text _sourceStatsText;
 
     private CanvasGroup _canvasGroup;
     
 
     private void OnEnable()
     {
-        _pipelineManager.PipelineObjectsLoaded += _pipelineManager_PipelineObjectsLoaded;
-        _pipelineManager.ChangedData += _pipelineManager_ChangedData;
+        PipelineManager.Instance.PipelineObjectsLoaded += _pipelineManager_PipelineObjectsLoaded;
+        PipelineManager.Instance.ChangedSourceData += _pipelineManager_ChangedSourceData;
+        PipelineManager.Instance.ChangedModuleData += _pipelineManager_ChangedModuleData;
+        PipelineManager.Instance.MouseClickedModule += Instance_MouseClickedModule;
+        PipelineManager.Instance.MouseClickedSource += Instance_MouseClickedSource;
     }
+
+    private void Instance_MouseClickedModule(object sender, PipelineManager.MouseModuleClickedArgs e)
+    {
+        _typesModulesDropdown.value = e.type;
+        _typesModulesDropdown.RefreshShownValue();
+        for (int i = 0; i < _modulesNamesDropdown.options.Count; i++)
+        {
+            if (_modulesNamesDropdown.options[i].text == e.name)
+            {
+                _modulesNamesDropdown.value = i;
+                _modulesNamesDropdown.RefreshShownValue();
+                break;
+            }
+        }
+    }
+
+    private void Instance_MouseClickedSource(object sender, PipelineManager.MouseSourceClickedArgs e)
+    {
+        for (int i = 0; i < _sourcesInPipelineDropdown.options.Count; i++)
+        {
+            if (_sourcesInPipelineDropdown.options[i].text == e.id)
+            {
+                _sourcesInPipelineDropdown.value = i;
+                _sourcesInPipelineDropdown.RefreshShownValue();
+                break;
+            }
+        }
+    }
+
 
     private void OnDisable()
     {
-        _pipelineManager.PipelineObjectsLoaded -= _pipelineManager_PipelineObjectsLoaded;
-        _pipelineManager.ChangedData -= _pipelineManager_ChangedData;
+        PipelineManager.Instance.PipelineObjectsLoaded -= _pipelineManager_PipelineObjectsLoaded;
+        PipelineManager.Instance.ChangedSourceData -= _pipelineManager_ChangedSourceData;
+        PipelineManager.Instance.ChangedModuleData -= _pipelineManager_ChangedModuleData;
     }
 
     private void Awake()
@@ -65,7 +114,14 @@ public class UIManager : MonoBehaviour
 
     public void PauseSimulation()
     {
-        Time.timeScale = _pauseToggle.isOn ? 0 : 1;
+        PipelineManager.Instance.SimulationIsPaused = _pauseToggle.isOn;
+    }
+
+    public void ToggleSourcesPanelInteractivity()
+    {
+        _sourcesPanel.interactable = !_sourcesPanel.interactable;
+        _sourcesPanel.blocksRaycasts = !_sourcesPanel.blocksRaycasts;
+        ShowSourcesStats();
     }
 
     /// <summary>
@@ -74,41 +130,84 @@ public class UIManager : MonoBehaviour
     public void ShowModulesNames()
     {
         _modulesNamesDropdown.ClearOptions();
-        _modulesNamesDropdown.AddOptions(_pipelineManager.GetModulesNames(_typesModulesDropdown.value));
-        ShowStats();
+        _modulesNamesDropdown.AddOptions(PipelineManager.Instance.GetModulesNames(_typesModulesDropdown.value));
+        ShowModuleStats();
     }
 
     /// <summary>
     /// Quando ho selezionato il nome di un modulo, mostro le sue stats
     /// </summary>
     /// <param name="moduleName"></param>
-    public void ShowStats()
+    public void ShowModuleStats()
     {
-        _statsText.text = _pipelineManager.GetStats(_typesModulesDropdown.value, _modulesNamesDropdown.options[_modulesNamesDropdown.value].text);
+        _moduleStatsText.text = PipelineManager.Instance.GetModuleStats(_typesModulesDropdown.value, _modulesNamesDropdown.options[_modulesNamesDropdown.value].text);
+    }
+    private void ShowModuleStats(string stats)
+    {
+        _moduleStatsText.text = stats;
     }
 
-    private void ShowStats(string stats)
+    private void ShowSourcesStats()
     {
-        _statsText.text = stats;
+        if (_sourcesInPipelineDropdown.value < _sourcesInPipelineDropdown.options.Count)
+            _sourceStatsText.text = PipelineManager.Instance.GetSourceStats(_sourcesInPipelineDropdown.options[_sourcesInPipelineDropdown.value].text);
+    }
+    private void ShowSourcesStats(string stats)
+    {
+        _sourceStatsText.text = stats;
     }
 
     private void _pipelineManager_PipelineObjectsLoaded(object sender, System.EventArgs e)
     {
-        List<string> modTypes = _pipelineManager.GetModuleTypesNames();
+        List<string> modTypes = PipelineManager.Instance.GetModuleTypesNames();
         _typesModulesDropdown.AddOptions(modTypes);
         _typesModulesDropdown.value = 0;
         ShowModulesNames();
-        ShowStats();
+        ShowModuleStats();
         Utilities.EnableCanvas(_canvasGroup, true);
     }
 
-    private void _pipelineManager_ChangedData(object sender, ProductionPipeline.PipelineManager.DataEventArgs e)
+    private void _pipelineManager_ChangedSourceData(object sender, ProductionPipeline.PipelineManager.SourceEventArgs e)
+    {
+        // if newStats == "", it means that the source must be removed
+        if (!e.newSource && e.newStats == "")
+        {
+            string toBeRemoved = e.sourceId;
+            for (int i = 0; i < _sourcesInPipelineDropdown.options.Count; i++)
+            {
+                if (_sourcesInPipelineDropdown.options[i].text == toBeRemoved)
+                {
+                    _sourcesInPipelineDropdown.options.RemoveAt(i);
+                    break;
+                }
+            }
+            ShowSourcesStats();
+        }
+        // otherwise, it must be added or updated
+        else
+        {
+            if (!e.newSource && _sourcesInPipelineDropdown.options[_sourcesInPipelineDropdown.value].text == e.sourceId)
+            {
+                ShowSourcesStats(e.newStats);
+            }
+            if (e.newSource)
+            {
+                List<string> newId = new List<string>();
+                newId.Add(e.sourceId);
+                _sourcesInPipelineDropdown.AddOptions(newId);
+            }
+        }
+        _sourcesInPipelineDropdown.RefreshShownValue();
+    }
+
+
+    private void _pipelineManager_ChangedModuleData(object sender, ProductionPipeline.PipelineManager.ModuleEventArgs e)
     {
         int moduleTypeEvent = (int)e.moduleType;
         if (_modulesNamesDropdown.options.Count > 0 && 
             moduleTypeEvent == _typesModulesDropdown.value && e.moduleName == _modulesNamesDropdown.options[_modulesNamesDropdown.value].text)
         {
-            ShowStats(e.newStats);
+            ShowModuleStats(e.newStats);
         }
     }
 
