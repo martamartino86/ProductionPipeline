@@ -19,7 +19,11 @@ namespace ProductionPipeline
         /// <summary>
         /// ID of the source.
         /// </summary>
-        public string Id { get { return _id; } protected set { _id = value; } }
+        public string Id 
+        { 
+            get { return _id; }
+            protected set { _id = value; } 
+        }
         [SerializeField]
         private string _id;
 
@@ -36,6 +40,10 @@ namespace ProductionPipeline
         public Module CreationModule { get; protected set; }
 
         protected Module _currentModuleParent { get; set; }
+        private PipelineManager _pipelineManager
+        { 
+            get { return PipelineManager.Instance; } 
+        }
 
         /// <summary>
         /// This event is raised when the source reaches the end of the conveyor.
@@ -54,30 +62,24 @@ namespace ProductionPipeline
         
         private void OnEnable()
         {
-            PipelineManager.Instance.SimulationPaused += Instance_SimulationPaused;
+            _pipelineManager.SimulationPaused += Instance_SimulationPaused;
         }
 
         private void OnDisable()
         {
-            if (PipelineManager.Instance != null)
-                PipelineManager.Instance.SimulationPaused -= Instance_SimulationPaused;
-        }
-
-        private void Instance_SimulationPaused(object sender, PipelineManager.SimulationEventArgs e)
-        {
-            if (e.IsPaused)
-            {
-                DOTween.PauseAll();
-            }
-            else
-            {
-                DOTween.PlayAll();
-            }
+            if (_pipelineManager != null)
+                _pipelineManager.SimulationPaused -= Instance_SimulationPaused;
         }
 
         private void Awake()
         {
             _renderers = GetComponentsInChildren<MeshRenderer>();
+        }
+
+        protected void SourceCreated()
+        {
+            CreationTime = Time.time;
+            _pipelineManager.AddSource(this);
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace ProductionPipeline
             _currentModuleParent = parentModule;
             if (!newSource)
             {
-                PipelineManager.Instance.ModifySource(Id, GetStats());
+                _pipelineManager.ModifySource(Id, GetStats());
             }
         }
 
@@ -127,24 +129,12 @@ namespace ProductionPipeline
             }
         }
 
-        protected void SourceCreated()
-        {
-            CreationTime = Time.time;
-            PipelineManager.Instance.AddSource(this);
-        }
-
-        private void OnDestroy()
-        {
-            if (PipelineManager.Instance != null)
-                PipelineManager.Instance.RemoveSource(Id);
-        }
-
         /// <summary>
         /// Handle the consequences of the source being assembled into another bigger source.
         /// </summary>
         public void Assembled()
         {
-            PipelineManager.Instance.RemoveSource(Id);
+            _pipelineManager.RemoveSource(Id);
         }
 
         public virtual string GetStats()
@@ -156,6 +146,28 @@ namespace ProductionPipeline
                 "\nThis source is on module " + _currentModuleParent;
             return stats;
         }
+
+        private void Instance_SimulationPaused(object sender, PipelineManager.SimulationEventArgs e)
+        {
+            if (e.IsPaused)
+            {
+                DOTween.PauseAll();
+            }
+            else
+            {
+                DOTween.PlayAll();
+            }
+        }
+
+        /// <summary>
+        /// When the source is destroyed, remove it from the pipeline structures.
+        /// </summary>
+        private void OnDestroy()
+        {
+            if (_pipelineManager != null)
+                _pipelineManager.RemoveSource(Id);
+        }
+
     }
 
 }

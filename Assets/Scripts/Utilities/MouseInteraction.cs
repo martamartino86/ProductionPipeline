@@ -4,9 +4,10 @@ namespace ProductionPipeline
 {
     public class MouseInteraction : MonoBehaviour
     {
-        Module m;
-        AssembledSource a_s;
-        Source s;
+        private Module m;
+        private AssembledSource a_s;
+        private Source s;
+        private PipelineManager _pipelineManager { get { return PipelineManager.Instance; } }
 
         private void Start()
         {
@@ -19,16 +20,16 @@ namespace ProductionPipeline
             CheckType();
             if (a_s != null)
             {
-                PipelineManager.Instance.MouseSelectedSource(a_s.Id);
+                _pipelineManager.MouseSelectedSource(a_s.Id);
             }
             else if (s != null)
             {
                 string id = s.Id;
-                PipelineManager.Instance.MouseSelectedSource(id);
+                _pipelineManager.MouseSelectedSource(id);
             }
             else
             {
-                PipelineManager.Instance.MouseSelectedModule(m.ModuleType, m.ModuleName);
+                _pipelineManager.MouseSelectedModule(m.ModuleType, m.ModuleName);
             }
         }
 

@@ -5,15 +5,25 @@ namespace ProductionPipeline
 {
     public class SourceProvider : Module
     {
-        public bool BeginProductionAtStart = true;
-
-        public Source.SourceType _sourceType;
-        public float _intervalInSeconds;
+        /// <summary>
+        /// If true, it starts the production as soon as the simulation starts, without waiting for the production time.
+        /// </summary>
+        [SerializeField]
+        private bool BeginProductionAtStart = true;
+        
+        [SerializeField]
+        private Source.SourceType _sourceType;
+        
+        [SerializeField]
+        private float _productionTime;
 
         private Base _baseSourcePrefab;
         private Body _bodySourcePrefab;
         private Detail _detailSourcePrefab;
 
+        /// <summary>
+        /// Total amount of source created from the beginning of the simulation.
+        /// </summary>
         private int _nSourcesCreated;
         private float _lastCreationTime;
 
@@ -39,7 +49,7 @@ namespace ProductionPipeline
         void Update()
         {
             if (_paused) return;
-            if (Time.time - _lastCreationTime >= _intervalInSeconds)
+            if (Time.time - _lastCreationTime >= _productionTime)
             {
                 CreateSource(_sourceType);
                 _lastCreationTime = Time.time;
@@ -81,7 +91,7 @@ namespace ProductionPipeline
         {
             string stats = base.GetStats();
             stats += "\nType of source produced: " + _sourceType.ToString() +
-                "\nCreate a new source each " + _intervalInSeconds.ToString() + " seconds" +
+                "\nCreate a new source each " + _productionTime.ToString() + " seconds" +
                 "\nTotal amount of sources created: " + _nSourcesCreated;
             if (BeginProductionAtStart)
             {

@@ -5,8 +5,12 @@ namespace ProductionPipeline
 {
     public class Buffer : Module
     {
-        [Range(0.1f,100f)]
-        public float _intervalInSeconds;
+        /// <summary>
+        /// Buffer time
+        /// </summary>
+        [SerializeField]
+        [Range(0.1f, 100f)]
+        private float _intervalInSeconds;
 
         private float _lastReleaseTime;
         private Queue<Source> _currentlyStoredSources;

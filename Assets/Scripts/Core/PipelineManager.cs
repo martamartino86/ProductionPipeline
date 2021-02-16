@@ -34,13 +34,29 @@ namespace ProductionPipeline
                 OnSimulationPaused(e);
             }
         }
+        
+        
         private bool _simulationIsPaused;
 
-        private Dictionary<string, Module> _modules;
-        private int _nModules;
-        private List<string>[] _modulesNames;
-        
+        /// <summary>
+        /// Structure for modules in pipeline: (moduleName, module)
+        /// </summary>
+        private Dictionary<string, Module> _modulesInPipeline;
+
+        /// <summary>
+        /// Structure for sources in pipeline: (sourceId, source)
+        /// </summary>
         private Dictionary<string, Source> _sourcesInPipeline;
+
+        /// <summary>
+        /// Total amount of modules present in the pipeline
+        /// </summary>
+        private int _nModules;
+
+        /// <summary>
+        /// Structure that contains all the modules names divided by type
+        /// </summary>
+        private List<string>[] _modulesNames;
 
         private WaitForEndOfFrame wait;
 
@@ -100,7 +116,9 @@ namespace ProductionPipeline
             public bool IsPaused;
         }
 
-
+        /// <summary>
+        /// Emits these events when the user has clicked with the mouse on a module or on a source.
+        /// </summary>
         public event EventHandler<MouseModuleClickedArgs> MouseClickedModule;
         public event EventHandler<MouseSourceClickedArgs> MouseClickedSource;
         protected virtual void OnMouseClickedModule(MouseModuleClickedArgs e)
@@ -132,15 +150,15 @@ namespace ProductionPipeline
         {
             _sourcesInPipeline = new Dictionary<string, Source>();
 
-            _modules = new Dictionary<string, Module>();
+            _modulesInPipeline = new Dictionary<string, Module>();
             foreach (var m in FindObjectsOfType<Module>())
             {
-                _modules.Add(m.ModuleName, m);
+                _modulesInPipeline.Add(m.ModuleName, m);
                 yield return wait;
             }
             _nModules = Enum.GetValues(typeof(ModuleType)).Length;
             _modulesNames = new List<string>[_nModules];
-            foreach (var m in _modules)
+            foreach (var m in _modulesInPipeline)
             {
                 Module module = m.Value;
                 if (_modulesNames[(int)module.ModuleType] == null)
@@ -217,11 +235,20 @@ namespace ProductionPipeline
             return _modulesNames[moduleType];
         }
 
+        /// <summary>
+        /// Get the names of all the sources in the pipeline.
+        /// </summary>
+        /// <returns></returns>
         public List<string> GetSourcesNames()
         {
             return new List<string>(_sourcesInPipeline.Keys);
         }
 
+        /// <summary>
+        /// Get the stats of a specific source.
+        /// </summary>
+        /// <param name="sourceId">Source id</param>
+        /// <returns></returns>
         public string GetSourceStats(string sourceId)
         {
             if (_sourcesInPipeline.ContainsKey(sourceId))
@@ -231,11 +258,23 @@ namespace ProductionPipeline
             else return "";
         }
 
+        /// <summary>
+        /// Get the stats of a module.
+        /// </summary>
+        /// <param name="moduleType">Module type</param>
+        /// <param name="moduleName">Module name</param>
+        /// <returns></returns>
         public string GetModuleStats(int moduleType, string moduleName)
         {
-            return _modules[moduleName].GetStats();
+            return _modulesInPipeline[moduleName].GetStats();
         }
 
+        /// <summary>
+        /// When a module has new stats, it calls this method to update its stats.
+        /// </summary>
+        /// <param name="moduleType">Module type</param>
+        /// <param name="moduleName">Module name</param>
+        /// <param name="newStats">New stats</param>
         public void ModuleDataUpdated(ModuleType moduleType, string moduleName, string newStats)
         {
             ModuleEventArgs args = new ModuleEventArgs();
@@ -245,12 +284,22 @@ namespace ProductionPipeline
             OnChangedModuleData(args);
         }
 
+        /// <summary>
+        /// When the user has clicked on a source, it calls this method.
+        /// </summary>
+        /// <param name="id">Source id</param>
         public void MouseSelectedSource(string id)
         {
             MouseSourceClickedArgs e = new MouseSourceClickedArgs();
             e.id = id;
             OnMouseClickedSource(e);
         }
+
+        /// <summary>
+        /// When the user has clicked on a module, it calls this method.
+        /// </summary>
+        /// <param name="moduleType">Module type</param>
+        /// <param name="moduleName">Module name</param>
         public void MouseSelectedModule(ModuleType moduleType, string moduleName)
         {
             MouseModuleClickedArgs e = new MouseModuleClickedArgs();

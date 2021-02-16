@@ -5,6 +5,9 @@ namespace ProductionPipeline
 {
     public class FlowSplitter : Module
     {
+        /// <summary>
+        /// Weights of the outputs
+        /// </summary>
         [SerializeField]
         [Range(0,1)]
         private float[] _outputWeights;

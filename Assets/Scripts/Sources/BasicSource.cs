@@ -4,12 +4,13 @@ namespace ProductionPipeline
 {
     public abstract class BasicSource : Source
     {
-        public Color Color { get { return _color; } private set { _color = value; } }
         /// <summary>
         /// Random generated color (at creation). Color assigned via inspector will be ignored.
         /// </summary>
+        public Color Color { get { return _color; } private set { _color = value; } }
         [SerializeField]
         private Color _color;
+
         private TextMesh _3dName;
 
         public virtual void Initialize(Module creationModule)
@@ -27,14 +28,13 @@ namespace ProductionPipeline
             name = Id;
             MeshRenderer mr = GetComponentInChildren<MeshRenderer>();
             mr.material.color = Color;
-            if (Width == 0 && Height == 0 && Depth == 0)
-            {
-                // Assuming that Width is the size on X axis, Height is the size on Y axis, Width is the size on Z axis
-                Vector3 meshBoundsSize = mr.bounds.size;
-                Width  = meshBoundsSize.x;
-                Height = meshBoundsSize.y;
-                Depth  = meshBoundsSize.z;
-            }
+            
+            // Assuming that Width is the size on X axis, Height is the size on Y axis, Width is the size on Z axis
+            Vector3 meshBoundsSize = mr.bounds.size;
+            Width  = meshBoundsSize.x;
+            Height = meshBoundsSize.y;
+            Depth  = meshBoundsSize.z;
+            
             _3dName = Instantiate(Resources.Load<TextMesh>("Prefabs/Source3dName"));
             _3dName.transform.SetParent(transform);
             _3dName.transform.localPosition = new Vector3(0, Height + .1f, 0);

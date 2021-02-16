@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProductionPipeline
@@ -11,10 +10,16 @@ namespace ProductionPipeline
             Storer,
             Destroyer
         }
+
+        public TypeOfReceiver ReceiverType { get { return _receiverType; } private set { _receiverType = value; } }
         [SerializeField]
-        public TypeOfReceiver ReceiverType;
+        private TypeOfReceiver _receiverType;
+
         private Queue<Source> _receivedSources;
         private bool _newSourceReceived;
+        /// <summary>
+        /// Total amount of sources received from the beginning of the simulation.
+        /// </summary>
         private int _nSourcesReceived;
 
         protected override void Awake()

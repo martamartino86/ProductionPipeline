@@ -7,30 +7,19 @@ namespace ProductionPipeline
         /// <summary>
         /// First source that compose the assembled source.
         /// </summary>
-        public Source Source1
-        {
-            get
-            {
-                return _source1;
-            }
-            private set
-            {
-                _source1 = value;
-            }
+        public Source Source1 
+        { 
+            get { return _source1; } 
+            private set { _source1 = value; } 
         }
+
         /// <summary>
         /// Second source that compose the assembled source.
         /// </summary>
         public Source Source2
         {
-            get
-            {
-                return _source2;
-            }
-            private set
-            {
-                _source2 = value;
-            }
+            get { return _source2; }
+            private set { _source2 = value; }
         }
         [SerializeField]
         private Source _source1, _source2;
